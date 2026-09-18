@@ -8,6 +8,8 @@
 	let selectedIndex = $state<number | null>(null);
 	let showNumberPicker = $state(false);
 	let pickerPosition = $state({ x: 0, y: 0 });
+	let commentMode = $state(false);
+	let notes = $state<Record<number, number[]>>({});
 
 	const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -24,9 +26,35 @@
 			return;
 		}
 
+		if (commentMode) {
+			if (value === null) {
+				const nextNotes = { ...notes };
+				delete nextNotes[selectedIndex];
+				notes = nextNotes;
+				showNumberPicker = false;
+				return;
+			}
+
+			const current = notes[selectedIndex] ?? [];
+			const nextNotes = current.includes(value)
+				? current.filter((num) => num !== value)
+				: [...current, value].sort((a, b) => a - b);
+			notes = { ...notes, [selectedIndex]: nextNotes };
+			if (board[selectedIndex] !== 0) {
+				const next = [...board];
+				next[selectedIndex] = 0;
+				board = next;
+			}
+			showNumberPicker = false;
+			return;
+		}
+
 		const next = [...board];
 		next[selectedIndex] = value ?? 0;
 		board = next;
+		const nextNotes = { ...notes };
+		delete nextNotes[selectedIndex];
+		notes = nextNotes;
 		showNumberPicker = false;
 	}
 
@@ -80,8 +108,10 @@
 
 	function resetBoard() {
 		board = [...initialFlat];
+		notes = {};
 		selectedIndex = null;
 		showNumberPicker = false;
+		commentMode = false;
 	}
 
 	function openNumberPicker(index: number, event?: MouseEvent) {
@@ -106,15 +136,19 @@
 	function generatePuzzleStub() {
 		const next = createPuzzleStub();
 		board = boardToFlat(next);
+		notes = {};
 		selectedIndex = null;
 		showNumberPicker = false;
+		commentMode = false;
 	}
 
 	function solveBoardStub() {
 		const solved = demoSolution;
 		board = boardToFlat(solved);
+		notes = {};
 		selectedIndex = null;
 		showNumberPicker = false;
+		commentMode = false;
 	}
 
 	function isSameRowOrColumn(index: number) {
@@ -145,11 +179,25 @@
 			col === 2 || col === 5 ? 'heavy-right' : ''
 		].join(' ');
 	}
+
+	function toggleCommentMode() {
+		commentMode = !commentMode;
+	}
+
+	function cellNotes(index: number) {
+		return notes[index] ?? [];
+	}
 </script>
 
 <svelte:head>
 	<title>Sudoku</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link
+		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0"
+		rel="stylesheet"
+	/>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -179,7 +227,15 @@
 						}}
 						aria-label={`Row ${Math.floor(index / 9) + 1}, column ${index % 9 + 1}`}
 					>
-						{value === 0 ? '' : value}
+						{#if value !== 0}
+							<span class="cell-value">{value}</span>
+						{:else if cellNotes(index).length > 0}
+							<div class="cell-notes" aria-label="Cell notes">
+								{#each cellNotes(index) as note}
+									<span>{note}</span>
+								{/each}
+							</div>
+						{/if}
 					</button>
 				{/each}
 			</div>
@@ -195,20 +251,43 @@
 		>
 			<div class="number-grid">
 				{#each digits as digit}
-					<button type="button" class="picker-digit" onclick={() => setCellValue(digit)}>{digit}</button>
+					<button type="button" class="picker-digit" onclick={() => setCellValue(digit)}>
+						<span class="picker-number">{digit}</span>
+						{#if commentMode}
+							<span class="picker-note-icon material-symbols-rounded">edit</span>
+						{/if}
+					</button>
 				{/each}
 			</div>
 			<div class="picker-actions" aria-label="Quick actions">
-				<button type="button" class="action-btn close-btn" aria-label="Close" onclick={() => (showNumberPicker = false)}>×</button>
-				<button type="button" class="action-btn clear-btn" aria-label="Clear cell" onclick={() => setCellValue(null)}>🧹</button>
-				<button type="button" class="action-btn note-btn" aria-label="Mark or note" onclick={() => (showNumberPicker = false)}>✎</button>
+				<button type="button" class="action-btn close-btn" aria-label="Close" onclick={() => (showNumberPicker = false)}>
+					<span class="material-symbols-rounded">close</span>
+				</button>
+				<button type="button" class="action-btn clear-btn" aria-label="Clear cell" onclick={() => setCellValue(null)}>
+					<span class="material-symbols-rounded">backspace</span>
+				</button>
+				<button
+					type="button"
+					class={`action-btn note-btn${commentMode ? ' active' : ''}`}
+					aria-label="Toggle notes"
+					onclick={() => {
+						toggleCommentMode();
+					}}
+				>
+					<span class="material-symbols-rounded">edit_note</span>
+				</button>
 			</div>
 		</div>
 	{/if}
 
 	<div class="keypad" aria-label="Number pad">
 		{#each digits as digit}
-			<button type="button" class="digit" onclick={() => setCellValue(digit)}>{digit}</button>
+			<button type="button" class="digit" onclick={() => setCellValue(digit)}>
+				<span>{digit}</span>
+				{#if commentMode}
+					<span class="digit-note-icon material-symbols-rounded">edit</span>
+				{/if}
+			</button>
 		{/each}
 		<button type="button" class="digit clear" onclick={() => setCellValue(null)}>Clear</button>
 	</div>
@@ -343,6 +422,27 @@
 		padding: 0;
 		cursor: pointer;
 		transition: background-color 0.15s ease, transform 0.15s ease;
+		position: relative;
+	}
+
+	.cell-value {
+		display: block;
+		line-height: 1;
+	}
+
+	.cell-notes {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 2px;
+		width: 80%;
+		height: 80%;
+		padding: 4px;
+		font-size: 0.46rem;
+		line-height: 1.1;
+		font-weight: 600;
+		color: #94a3b8;
+		text-align: center;
+		align-items: center;
 	}
 
 	.cell:hover {
@@ -407,9 +507,28 @@
 		border-radius: 10px;
 		background: white;
 		padding: 0.52rem 0.2rem;
-		font-size: 1rem;
+		font-size: 1.15rem;
 		font-weight: 800;
 		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+	}
+
+	.picker-number {
+		display: inline-block;
+		line-height: 1;
+	}
+
+	.picker-note-icon {
+		position: absolute;
+		top: 3px;
+		right: 3px;
+		font-size: 0.8rem;
+		line-height: 1;
+		color: #64748b;
+		pointer-events: none;
 	}
 
 	.picker-actions {
@@ -429,6 +548,10 @@
 		width: 36px;
 		height: 36px;
 		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
 	}
 
 	.close-btn {
@@ -443,6 +566,25 @@
 		background: #dbeafe;
 	}
 
+	.note-btn.active {
+		background: #bfdbfe;
+		border-color: #60a5fa;
+		box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.5);
+	}
+
+	.material-symbols-rounded {
+		font-family: 'Material Symbols Rounded';
+		font-size: 1.1rem;
+		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+		line-height: 1;
+		display: inline-block;
+	}
+
+	.material-symbols-rounded.picker-note-icon,
+	.material-symbols-rounded.digit-note-icon {
+		font-size: 0.8rem;
+	}
+
 	.digit {
 		appearance: none;
 		border: 1px solid rgba(15, 23, 42, 0.12);
@@ -452,6 +594,17 @@
 		font-size: clamp(1.15rem, 3vw, 1.8rem);
 		font-weight: 800;
 		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+	}
+
+	.digit-note-icon {
+		font-size: 0.7rem;
+		line-height: 1;
+		color: #64748b;
+		transform: translateY(1px);
 	}
 
 	.clear {
