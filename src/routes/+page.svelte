@@ -120,6 +120,12 @@
 		highlightedValue = null;
 	}
 
+	// Dummy export handler (implement later)
+	function exportPdf(): void {
+		// TODO: implement PDF export
+		console.log('exportPdf called — TODO: implement');
+	}
+
 	function openNumberPicker(index: number, event?: MouseEvent) {
 		selectedIndex = index;
 		highlightedValue = board[index] !== 0 ? board[index] : null;
@@ -277,7 +283,10 @@
 	<header class="hero">
 		<p class="eyebrow">Play anywhere</p>
 		<h1>SUDOKU</h1>
-		<p class="subtitle">Big, readable puzzle layout built for desktop and mobile.</p>
+		<div class="header-actions">
+			<span class="header-label">Printable Version</span>
+			<button class="ghost export-btn" type="button" onclick={exportPdf}>Export PDF</button>
+		</div>
 	</header>
 
 	<section class="toolbar" aria-label="Sudoku controls">
@@ -413,6 +422,17 @@
 		color: #475569;
 	}
 
+	.export-btn {
+		border-radius: 999px;
+		padding: 0.45rem 0.75rem;
+		font-weight: 700;
+		cursor: pointer;
+		background: rgba(255, 255, 255, 0.7);
+		color: #0f172a;
+		border: 1px solid rgba(15, 23, 42, 0.12);
+		font-size: 0.85rem;
+	}
+
 	h1 {
 		margin: 0;
 		font-size: clamp(3.25rem, 10vw, 7rem);
@@ -421,11 +441,16 @@
 		font-weight: 900;
 	}
 
-	.subtitle {
-		margin: 12px auto 0;
-		max-width: 48rem;
-		font-size: clamp(0.95rem, 2vw, 1.25rem);
-		color: #334155;
+	.header-actions {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	.header-label {
+		font-size: 0.95rem;
+		color: #475569;
 	}
 
 	.toolbar {
@@ -829,5 +854,16 @@
 		.toolbar button {
 			flex: 1 1 140px;
 		}
+	}
+
+	/* Remove borders from interactive buttons for consistent appearance */
+	.ghost,
+	.export-btn,
+	.picker-digit,
+	.action-btn,
+	.digit,
+	.primary,
+	.toggle {
+		border: none !important;
 	}
 </style>
