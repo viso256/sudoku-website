@@ -9,6 +9,7 @@
 	let showNumberPicker = $state(false);
 	let pickerPosition = $state({ x: 0, y: 0 });
 	let commentMode = $state(false);
+	let hintsEnabled = $state(true);
 	let notes = $state<Record<number, number[]>>({});
 
 	const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -188,6 +189,43 @@
 		return notes[index] ?? [];
 	}
 
+	function blockedDigitsForCell(targetIndex: number) {
+		const blocked = new Set<number>();
+		if (targetIndex < 0 || targetIndex >= board.length) {
+			return blocked;
+		}
+
+		const row = Math.floor(targetIndex / 9);
+		const col = targetIndex % 9;
+
+		for (let index = 0; index < board.length; index += 1) {
+			const value = board[index];
+			if (value === 0 || index === targetIndex) {
+				continue;
+			}
+
+			const checkRow = Math.floor(index / 9);
+			const checkCol = index % 9;
+			const sameRow = checkRow === row;
+			const sameCol = checkCol === col;
+			const sameBox = Math.floor(checkRow / 3) === Math.floor(row / 3) && Math.floor(checkCol / 3) === Math.floor(col / 3);
+
+			if (sameRow || sameCol || sameBox) {
+				blocked.add(value);
+			}
+		}
+
+		return blocked;
+	}
+
+	function visibleCellNotes(index: number) {
+		if (!hintsEnabled) {
+			return cellNotes(index);
+		}
+		const blocked = blockedDigitsForCell(index);
+		return cellNotes(index).filter((note) => !blocked.has(note));
+	}
+
 	function selectedNotesForCell() {
 		if (selectedIndex === null) {
 			return new Set<number>();
@@ -239,6 +277,11 @@
 		<button class="ghost" type="button" onclick={resetBoard}>Reset</button>
 		<button class="ghost" type="button" onclick={generatePuzzleStub}>New puzzle</button>
 		<button class="primary" type="button" onclick={solveBoardStub}>Solve</button>
+		<label class="toggle" aria-label="Toggle hints">
+			<span>Hints</span>
+			<input type="checkbox" bind:checked={hintsEnabled} />
+			<span class="toggle-track"><span class="toggle-thumb" /></span>
+		</label>
 	</section>
 
 	<div class="board-layout">
@@ -255,9 +298,9 @@
 					>
 						{#if value !== 0}
 							<span class="cell-value">{value}</span>
-						{:else if cellNotes(index).length > 0}
+						{:else if visibleCellNotes(index).length > 0}
 							<div class="cell-notes" aria-label="Cell notes">
-								{#each cellNotes(index) as note}
+								{#each visibleCellNotes(index) as note}
 									<span>{note}</span>
 								{/each}
 							</div>
@@ -278,9 +321,11 @@
 			<div class="number-grid">
 				{#each digits as digit}
 					{@const isSelectedNote = selectedNotesForCell().has(digit)}
+					{@const isBlocked = hintsEnabled && selectedIndex !== null && blockedDigitsForCell(selectedIndex).has(digit)}
 					<button
 						type="button"
-						class={`picker-digit${isSelectedNote ? ' note-selected' : ''}`}
+						class={`picker-digit${isSelectedNote ? ' note-selected' : ''}${isBlocked ? ' blocked' : ''}`}
+						disabled={isBlocked && !isSelectedNote}
 						onclick={() => setCellValue(digit)}
 					>
 						<span class="picker-number">{digit}</span>
@@ -395,6 +440,54 @@
 		padding: 0.8rem 1.2rem;
 		font-weight: 700;
 		cursor: pointer;
+	}
+
+	.toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 0.45rem 0.8rem;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.7);
+		border: 1px solid rgba(15, 23, 42, 0.12);
+		font-weight: 700;
+		color: #0f172a;
+		cursor: pointer;
+	}
+
+	.toggle input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.toggle-track {
+		position: relative;
+		display: inline-block;
+		width: 38px;
+		height: 22px;
+		border-radius: 999px;
+		background: #cbd5e1;
+		transition: background-color 0.2s ease;
+	}
+
+	.toggle-thumb {
+		position: absolute;
+		top: 3px;
+		left: 3px;
+		width: 14px;
+		height: 14px;
+		border-radius: 999px;
+		background: white;
+		transition: transform 0.2s ease;
+	}
+
+	.toggle input:checked + .toggle-track {
+		background: #60a5fa;
+	}
+
+	.toggle input:checked + .toggle-track .toggle-thumb {
+		transform: translateX(16px);
 	}
 
 	.primary {
@@ -565,6 +658,14 @@
 		background: #dbeafe;
 		border-color: #93c5fd;
 		box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
+	}
+
+	.picker-digit.blocked {
+		opacity: 0.45;
+		text-decoration: line-through;
+		text-decoration-thickness: 2px;
+		text-decoration-color: rgba(15, 23, 42, 0.7);
+		cursor: not-allowed;
 	}
 
 	.picker-number {
