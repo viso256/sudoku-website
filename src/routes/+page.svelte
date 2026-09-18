@@ -423,6 +423,7 @@
 		cursor: pointer;
 		transition: background-color 0.15s ease, transform 0.15s ease;
 		position: relative;
+		overflow: hidden;
 	}
 
 	.cell-value {
@@ -433,16 +434,29 @@
 	.cell-notes {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 2px;
-		width: 80%;
-		height: 80%;
-		padding: 4px;
-		font-size: 0.46rem;
-		line-height: 1.1;
-		font-weight: 600;
+		grid-template-rows: repeat(3, minmax(0, 1fr));
+		gap: 1px;
+		width: 100%;
+		height: 100%;
+		padding: 0px;
+		font-size: 0.7rem;
+		line-height: 50%;
+		font-weight: 700;
 		color: #94a3b8;
 		text-align: center;
 		align-items: center;
+		justify-items: center;
+	}
+
+	.cell-notes span {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		font-size: 0.7rem;
+		white-space: nowrap;
+		overflow: hidden;
 	}
 
 	.cell:hover {
