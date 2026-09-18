@@ -93,9 +93,12 @@
 		showNumberPicker = true;
 
 		if (event) {
+			const target = event.currentTarget as HTMLElement | null;
+			const rect = target?.getBoundingClientRect();
+
 			pickerPosition = {
-				x: event.clientX,
-				y: event.clientY
+				x: rect ? rect.left + rect.width / 2 : event.clientX,
+				y: rect ? rect.top - 8 : event.clientY - 8
 			};
 		}
 	}
@@ -188,12 +191,18 @@
 			class="number-picker"
 			role="dialog"
 			aria-label="Choose a number"
-			style={`left:${pickerPosition.x}px; top:${pickerPosition.y - 120}px;`}
+			style={`left:${pickerPosition.x}px; top:${pickerPosition.y}px;`}
 		>
-			{#each digits as digit}
-				<button type="button" class="picker-digit" onclick={() => setCellValue(digit)}>{digit}</button>
-			{/each}
-			<button type="button" class="picker-digit clear-picker" onclick={() => setCellValue(null)}>Clear</button>
+			<div class="number-grid">
+				{#each digits as digit}
+					<button type="button" class="picker-digit" onclick={() => setCellValue(digit)}>{digit}</button>
+				{/each}
+			</div>
+			<div class="picker-actions" aria-label="Quick actions">
+				<button type="button" class="action-btn close-btn" aria-label="Close" onclick={() => (showNumberPicker = false)}>×</button>
+				<button type="button" class="action-btn clear-btn" aria-label="Clear cell" onclick={() => setCellValue(null)}>🧹</button>
+				<button type="button" class="action-btn note-btn" aria-label="Mark or note" onclick={() => (showNumberPicker = false)}>✎</button>
+			</div>
 		</div>
 	{/if}
 
@@ -373,32 +382,65 @@
 	}
 
 	.number-picker {
+		display: flex;
+		align-items: stretch;
+		gap: 8px;
+		width: min(58vw, 210px);
+		padding: 8px;
+		border-radius: 14px;
+		background: rgba(255, 255, 255, 0.96);
+		box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
+		position: fixed;
+		transform: translate(-50%, -100%);
+	}
+
+	.number-grid {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 8px;
-		width: min(54vw, 220px);
-		padding: 10px;
-		border-radius: 16px;
-		background: rgba(255, 255, 255, 0.94);
-		box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
-		position: fixed;
-		transform: translate(-50%, 0);
+		gap: 6px;
+		flex: 1;
 	}
 
 	.picker-digit {
 		appearance: none;
 		border: 1px solid rgba(15, 23, 42, 0.12);
-		border-radius: 12px;
+		border-radius: 10px;
 		background: white;
-		padding: 0.65rem 0.4rem;
-		font-size: 1.1rem;
+		padding: 0.52rem 0.2rem;
+		font-size: 1rem;
 		font-weight: 800;
 		cursor: pointer;
 	}
 
-	.clear-picker {
+	.picker-actions {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		gap: 6px;
+	}
+
+	.action-btn {
+		appearance: none;
+		border: 1px solid rgba(15, 23, 42, 0.12);
+		border-radius: 10px;
+		background: #f8fafc;
+		font-size: 1rem;
+		font-weight: 700;
+		width: 36px;
+		height: 36px;
+		cursor: pointer;
+	}
+
+	.close-btn {
+		background: #f1f5f9;
+	}
+
+	.clear-btn {
 		background: #e2e8f0;
-		grid-column: span 3;
+	}
+
+	.note-btn {
+		background: #dbeafe;
 	}
 
 	.digit {
