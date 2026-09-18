@@ -6,8 +6,10 @@
 
 	let board = $state<number[]>([...initialFlat]);
 	let selectedIndex = $state<number | null>(null);
+	let showNumberPicker = $state(false);
+	let pickerPosition = $state({ x: 0, y: 0 });
 
-	const keypad = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+	const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 	function isFixedCell(index: number) {
 		return initialFlat[index] !== 0;
@@ -25,6 +27,7 @@
 		const next = [...board];
 		next[selectedIndex] = value ?? 0;
 		board = next;
+		showNumberPicker = false;
 	}
 
 	function moveSelection(deltaRow: number, deltaCol: number) {
@@ -78,18 +81,37 @@
 	function resetBoard() {
 		board = [...initialFlat];
 		selectedIndex = null;
+		showNumberPicker = false;
+	}
+
+	function openNumberPicker(index: number, event?: MouseEvent) {
+		if (isFixedCell(index)) {
+			return;
+		}
+
+		selectedIndex = index;
+		showNumberPicker = true;
+
+		if (event) {
+			pickerPosition = {
+				x: event.clientX,
+				y: event.clientY
+			};
+		}
 	}
 
 	function generatePuzzleStub() {
 		const next = createPuzzleStub();
 		board = boardToFlat(next);
 		selectedIndex = null;
+		showNumberPicker = false;
 	}
 
 	function solveBoardStub() {
 		const solved = demoSolution;
 		board = boardToFlat(solved);
 		selectedIndex = null;
+		showNumberPicker = false;
 	}
 
 	function isSameRowOrColumn(index: number) {
@@ -142,23 +164,41 @@
 		<button class="primary" type="button" onclick={solveBoardStub}>Solve</button>
 	</section>
 
-	<div class="board-frame">
-		<div class="board" role="grid" aria-label="9 by 9 Sudoku board">
-			{#each board as value, index}
-				<button
-					type="button"
-					class={cellClass(index)}
-					onclick={() => (selectedIndex = index)}
-					aria-label={`Row ${Math.floor(index / 9) + 1}, column ${index % 9 + 1}`}
-				>
-					{value === 0 ? '' : value}
-				</button>
-			{/each}
+	<div class="board-layout">
+		<div class="board-frame">
+			<div class="board" role="grid" aria-label="9 by 9 Sudoku board">
+				{#each board as value, index}
+					<button
+						type="button"
+						class={cellClass(index)}
+						onclick={(event) => {
+							openNumberPicker(index, event);
+						}}
+						aria-label={`Row ${Math.floor(index / 9) + 1}, column ${index % 9 + 1}`}
+					>
+						{value === 0 ? '' : value}
+					</button>
+				{/each}
+			</div>
 		</div>
 	</div>
 
+	{#if showNumberPicker && selectedIndex !== null && !isFixedCell(selectedIndex)}
+		<div
+			class="number-picker"
+			role="dialog"
+			aria-label="Choose a number"
+			style={`left:${pickerPosition.x}px; top:${pickerPosition.y - 120}px;`}
+		>
+			{#each digits as digit}
+				<button type="button" class="picker-digit" onclick={() => setCellValue(digit)}>{digit}</button>
+			{/each}
+			<button type="button" class="picker-digit clear-picker" onclick={() => setCellValue(null)}>Clear</button>
+		</div>
+	{/if}
+
 	<div class="keypad" aria-label="Number pad">
-		{#each keypad as digit}
+		{#each digits as digit}
 			<button type="button" class="digit" onclick={() => setCellValue(digit)}>{digit}</button>
 		{/each}
 		<button type="button" class="digit clear" onclick={() => setCellValue(null)}>Clear</button>
@@ -250,6 +290,14 @@
 		border: 1px solid rgba(15, 23, 42, 0.12);
 	}
 
+	.board-layout {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 18px;
+		width: 100%;
+	}
+
 	.board-frame {
 		display: flex;
 		justify-content: center;
@@ -265,6 +313,12 @@
 		border: 4px solid #0f172a;
 		box-shadow: 0 28px 60px rgba(15, 23, 42, 0.18);
 		overflow: hidden;
+	}
+
+	.number-picker {
+		display: none;
+		position: fixed;
+		z-index: 20;
 	}
 
 	.cell {
@@ -315,11 +369,36 @@
 	}
 
 	.keypad {
+		display: none;
+	}
+
+	.number-picker {
 		display: grid;
-		grid-template-columns: repeat(5, minmax(52px, 1fr));
-		gap: 10px;
-		width: min(90vw, 740px);
-		margin-top: 18px;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 8px;
+		width: min(54vw, 220px);
+		padding: 10px;
+		border-radius: 16px;
+		background: rgba(255, 255, 255, 0.94);
+		box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+		position: fixed;
+		transform: translate(-50%, 0);
+	}
+
+	.picker-digit {
+		appearance: none;
+		border: 1px solid rgba(15, 23, 42, 0.12);
+		border-radius: 12px;
+		background: white;
+		padding: 0.65rem 0.4rem;
+		font-size: 1.1rem;
+		font-weight: 800;
+		cursor: pointer;
+	}
+
+	.clear-picker {
+		background: #e2e8f0;
+		grid-column: span 3;
 	}
 
 	.digit {
@@ -351,6 +430,20 @@
 
 	.note p {
 		margin: 0;
+	}
+
+	@media (min-width: 900px) {
+		.board-layout {
+			gap: 20px;
+			align-items: center;
+		}
+
+		.board {
+			width: min(52vmin, 48vw, 500px);
+			height: min(52vmin, 48vw, 500px);
+			max-width: 500px;
+			max-height: 500px;
+		}
 	}
 
 	@media (max-width: 640px) {
