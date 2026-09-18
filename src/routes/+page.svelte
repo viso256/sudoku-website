@@ -329,6 +329,9 @@
 						onclick={() => setCellValue(digit)}
 					>
 						<span class="picker-number">{digit}</span>
+						{#if isBlocked}
+							<span class="picker-blocked-icon material-symbols-rounded">block</span>
+						{/if}
 						{#if commentMode}
 							<span class="picker-note-icon material-symbols-rounded">edit</span>
 						{/if}
@@ -662,15 +665,27 @@
 
 	.picker-digit.blocked {
 		opacity: 0.45;
-		text-decoration: line-through;
-		text-decoration-thickness: 2px;
-		text-decoration-color: rgba(15, 23, 42, 0.7);
 		cursor: not-allowed;
+	}
+
+	.picker-blocked-icon.material-symbols-rounded {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-size: 1.8rem;
+		line-height: 1;
+		color: rgba(15, 23, 42, 0.72);
+		pointer-events: none;
+		z-index: 2;
+		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
 	}
 
 	.picker-number {
 		display: inline-block;
 		line-height: 1;
+		position: relative;
+		z-index: 1;
 	}
 
 	.picker-note-icon {
@@ -707,7 +722,8 @@
 	}
 
 	.close-btn {
-		background: #f1f5f9;
+		background: transparent;
+		border-color: transparent;
 	}
 
 	.clear-btn {
