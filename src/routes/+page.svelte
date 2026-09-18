@@ -11,6 +11,7 @@
 	let commentMode = $state(false);
 	let hintsEnabled = $state(true);
 	let notes = $state<Record<number, number[]>>({});
+	let highlightedValue = $state<number | null>(null);
 
 	const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -33,6 +34,7 @@
 				delete nextNotes[selectedIndex];
 				notes = nextNotes;
 				showNumberPicker = false;
+				highlightedValue = null;
 				return;
 			}
 
@@ -47,6 +49,7 @@
 				board = next;
 			}
 			showNumberPicker = false;
+			highlightedValue = value;
 			return;
 		}
 
@@ -57,6 +60,7 @@
 		delete nextNotes[selectedIndex];
 		notes = nextNotes;
 		showNumberPicker = false;
+		highlightedValue = value ?? null;
 	}
 
 	function moveSelection(deltaRow: number, deltaCol: number) {
@@ -113,15 +117,13 @@
 		selectedIndex = null;
 		showNumberPicker = false;
 		commentMode = false;
+		highlightedValue = null;
 	}
 
 	function openNumberPicker(index: number, event?: MouseEvent) {
-		if (isFixedCell(index)) {
-			return;
-		}
-
 		selectedIndex = index;
-		showNumberPicker = true;
+		highlightedValue = board[index] !== 0 ? board[index] : null;
+		showNumberPicker = !isFixedCell(index) && !showNumberPicker;
 
 		if (event) {
 			const target = event.currentTarget as HTMLElement | null;
@@ -141,6 +143,7 @@
 		selectedIndex = null;
 		showNumberPicker = false;
 		commentMode = false;
+		highlightedValue = null;
 	}
 
 	function solveBoardStub() {
@@ -150,6 +153,7 @@
 		selectedIndex = null;
 		showNumberPicker = false;
 		commentMode = false;
+		highlightedValue = null;
 	}
 
 	function isSameRowOrColumn(index: number) {
@@ -164,6 +168,7 @@
 		const col = index % 9;
 		const isSelected = selectedIndex === index;
 		const isFixed = isFixedCell(index);
+		const isHighlighted = highlightedValue !== null && board[index] === highlightedValue;
 		const isRowMatch = selectedIndex !== null && Math.floor(selectedIndex / 9) === row;
 		const isColMatch = selectedIndex !== null && selectedIndex % 9 === col;
 		const isBoxMatch =
@@ -175,6 +180,7 @@
 			'cell',
 			isSelected ? 'selected' : '',
 			isFixed ? 'fixed' : 'editable',
+			isHighlighted ? 'same-value' : '',
 			isRowMatch || isColMatch || isBoxMatch ? 'related' : '',
 			row === 2 || row === 5 ? 'heavy-bottom' : '',
 			col === 2 || col === 5 ? 'heavy-right' : ''
@@ -235,6 +241,7 @@
 
 	function closeNumberPicker() {
 		showNumberPicker = false;
+		highlightedValue = null;
 	}
 </script>
 
@@ -369,10 +376,6 @@
 			</button>
 		{/each}
 		<button type="button" class="digit clear" onclick={() => setCellValue(null)}>Clear</button>
-	</div>
-
-	<div class="note">
-		<p>Generator and solver placeholders are ready for the later WASM integration.</p>
 	</div>
 </div>
 
@@ -604,6 +607,11 @@
 		background: #dbeafe;
 		outline: 3px solid #60a5fa;
 		z-index: 2;
+	}
+
+	.cell.same-value {
+		background: #fdf2d7;
+		box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.22);
 	}
 
 	.cell.related {
