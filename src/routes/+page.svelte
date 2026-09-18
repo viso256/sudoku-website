@@ -187,6 +187,17 @@
 	function cellNotes(index: number) {
 		return notes[index] ?? [];
 	}
+
+	function selectedNotesForCell() {
+		if (selectedIndex === null) {
+			return new Set<number>();
+		}
+		return new Set(cellNotes(selectedIndex));
+	}
+
+	function closeNumberPicker() {
+		showNumberPicker = false;
+	}
 </script>
 
 <svelte:head>
@@ -200,7 +211,22 @@
 	/>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onmousedown={(event) => {
+	if (!showNumberPicker) {
+		return;
+	}
+
+	const target = event.target as HTMLElement | null;
+	if (!target) {
+		closeNumberPicker();
+		return;
+	}
+
+	const picker = document.querySelector('.number-picker');
+	if (picker && !picker.contains(target)) {
+		closeNumberPicker();
+	}
+}} />
 
 <div class="page-shell">
 	<header class="hero">
@@ -251,7 +277,12 @@
 		>
 			<div class="number-grid">
 				{#each digits as digit}
-					<button type="button" class="picker-digit" onclick={() => setCellValue(digit)}>
+					{@const isSelectedNote = selectedNotesForCell().has(digit)}
+					<button
+						type="button"
+						class={`picker-digit${isSelectedNote ? ' note-selected' : ''}`}
+						onclick={() => setCellValue(digit)}
+					>
 						<span class="picker-number">{digit}</span>
 						{#if commentMode}
 							<span class="picker-note-icon material-symbols-rounded">edit</span>
@@ -528,6 +559,12 @@
 		align-items: center;
 		justify-content: center;
 		position: relative;
+	}
+
+	.picker-digit.note-selected {
+		background: #dbeafe;
+		border-color: #93c5fd;
+		box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
 	}
 
 	.picker-number {
