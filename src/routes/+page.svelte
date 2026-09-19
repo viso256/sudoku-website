@@ -716,6 +716,7 @@
 	.board {
 		display: grid;
 		grid-template-columns: repeat(9, minmax(0, 1fr));
+		grid-auto-rows: 1fr;
 		width: min(90vw, 760px);
 		aspect-ratio: 1 / 1;
 		background: #f8fafc;
