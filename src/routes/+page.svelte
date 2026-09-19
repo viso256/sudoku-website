@@ -17,12 +17,44 @@
 	let showNumberPicker = $state(false);
 	let pickerPosition = $state({ x: 0, y: 0 });
 	let commentMode = $state(false);
-	let hintsEnabled = $state(true);
+	let hintsEnabled = $state(false);
 	let notes = $state<Record<number, number[]>>({});
 	let highlightedValue = $state<number | null>(null);
 	let isGeneratingPuzzle = $state(false);
 	let isExportingPdf = $state(false);
 	let pdfPageCount = $state(2);
+
+	// Load persisted settings from localStorage
+	$effect.pre(() => {
+		if (typeof window !== 'undefined') {
+			const savedHints = localStorage.getItem('sudoku-hints-enabled');
+			if (savedHints !== null) {
+				hintsEnabled = savedHints === 'true';
+			}
+
+			const savedPageCount = localStorage.getItem('sudoku-pdf-page-count');
+			if (savedPageCount !== null) {
+				const parsed = parseInt(savedPageCount, 10);
+				if (!isNaN(parsed)) {
+					pdfPageCount = parsed;
+				}
+			}
+		}
+	});
+
+	// Persist hints setting to localStorage
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('sudoku-hints-enabled', String(hintsEnabled));
+		}
+	});
+
+	// Persist page count to localStorage
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('sudoku-pdf-page-count', String(pdfPageCount));
+		}
+	});
 
 	const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
