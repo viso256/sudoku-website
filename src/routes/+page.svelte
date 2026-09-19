@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import {
 		boardToFlat,
+		clampPickerPosition,
 		createPuzzleFromWasm,
 		createPuzzleStub,
 		exportPdfFromWasm,
@@ -190,11 +191,20 @@
 		if (event) {
 			const target = event.currentTarget as HTMLElement | null;
 			const rect = target?.getBoundingClientRect();
-
-			pickerPosition = {
+			const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+			const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+			const pickerWidth = Math.min(viewportWidth * 0.58, 210);
+			const { x, y } = clampPickerPosition({
 				x: rect ? rect.left + rect.width / 2 : event.clientX,
-				y: rect ? rect.top - 8 : event.clientY - 8
-			};
+				y: rect ? rect.top - 8 : event.clientY - 8,
+				width: pickerWidth,
+				height: 180,
+				viewportWidth,
+				viewportHeight,
+				padding: 12
+			});
+
+			pickerPosition = { x, y };
 		}
 	}
 

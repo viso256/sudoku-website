@@ -1,4 +1,4 @@
-import init, { generate_pdf, generate_sudoku, solve_sudoku } from 'sudoku-wasm';
+import init, { generate_pdf, generate_sudoku } from 'sudoku-wasm';
 
 export type SudokuBoard = number[][];
 
@@ -90,6 +90,34 @@ export function solvePuzzleStub(puzzle: SudokuBoard): SudokuBoard {
 
 export function boardToFlat(board: SudokuBoard): number[] {
 	return board.flat();
+}
+
+export function clampPickerPosition({
+	x,
+	y,
+	width,
+	height,
+	viewportWidth,
+	viewportHeight,
+	padding = 8
+}: {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+	viewportWidth: number;
+	viewportHeight: number;
+	padding?: number;
+}): { x: number; y: number } {
+	const minX = width / 2 + padding;
+	const maxX = Math.max(minX, viewportWidth - width / 2 - padding);
+	const minY = height + padding;
+	const maxY = Math.max(minY, viewportHeight - padding);
+
+	return {
+		x: Math.min(Math.max(x, minX), maxX),
+		y: Math.min(Math.max(y, minY), maxY)
+	};
 }
 
 export function flatToBoard(flat: number[]): SudokuBoard {

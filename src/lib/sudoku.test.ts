@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { parseGeneratedSudoku } from './sudoku.ts';
+import { clampPickerPosition, parseGeneratedSudoku } from './sudoku.ts';
 
 test('parseGeneratedSudoku converts nulls into empty cells', () => {
 	const raw = JSON.stringify({
@@ -34,4 +34,19 @@ test('parseGeneratedSudoku converts nulls into empty cells', () => {
 	assert.deepEqual(board[0], [7, 0, 1, 0, 0, 3, 9, 0, 0]);
 	assert.equal(board[1][0], 0);
 	assert.equal(board[8][8], 0);
+});
+
+test('clampPickerPosition keeps the number picker within a narrow viewport', () => {
+	const position = clampPickerPosition({
+		x: 42,
+		y: 60,
+		width: 160,
+		height: 164,
+		viewportWidth: 360,
+		viewportHeight: 640,
+		padding: 12
+	});
+
+	assert.equal(position.x, 92);
+	assert.equal(position.y, 176);
 });
