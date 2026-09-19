@@ -12,8 +12,7 @@
 
 	let initialPuzzle = $state<SudokuBoard>(createPuzzleStub());
 	let initialFlat = $derived(boardToFlat(initialPuzzle));
-
-	let board = $state<number[]>([]);
+	let board = $state<number[]>(boardToFlat(createPuzzleStub()));
 	let selectedIndex = $state<number | null>(null);
 	let showNumberPicker = $state(false);
 	let pickerPosition = $state({ x: 0, y: 0 });
@@ -724,10 +723,11 @@
 	}
 
 	.board {
+		--board-size: min(90vw, 760px);
 		display: grid;
 		grid-template-columns: repeat(9, minmax(0, 1fr));
 		grid-auto-rows: 1fr;
-		width: min(90vw, 760px);
+		width: var(--board-size);
 		aspect-ratio: 1 / 1;
 		background: #f8fafc;
 		border: 4px solid #0f172a;
@@ -746,7 +746,7 @@
 		border: 1px solid #cbd5e1;
 		background: #fff;
 		color: #0f172a;
-		font-size: clamp(1.25rem, 2.8vw, 2.8rem);
+		font-size: clamp(0.9rem, calc(var(--board-size) * 0.085), 2.8rem);
 		font-weight: 700;
 		display: flex;
 		align-items: center;
@@ -771,7 +771,7 @@
 		width: 100%;
 		height: 100%;
 		padding: 0px;
-		font-size: 0.7rem;
+		font-size: clamp(0.45rem, calc(var(--board-size) * 0.018), 0.8rem);
 		line-height: 50%;
 		font-weight: 700;
 		color: #94a3b8;
@@ -786,7 +786,7 @@
 		justify-content: center;
 		width: 100%;
 		height: 100%;
-		font-size: 0.7rem;
+		font-size: clamp(0.45rem, calc(var(--board-size) * 0.018), 0.8rem);
 		white-space: nowrap;
 		overflow: hidden;
 	}
@@ -1008,8 +1008,9 @@
 		}
 
 		.board {
-			width: min(52vmin, 48vw, 500px);
-			height: min(52vmin, 48vw, 500px);
+			--board-size: min(52vmin, 48vw, 500px);
+			width: var(--board-size);
+			height: var(--board-size);
 			max-width: 500px;
 			max-height: 500px;
 		}
