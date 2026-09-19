@@ -72,7 +72,8 @@ export async function exportPdfFromWasm(pages = 1): Promise<void> {
 	const url = URL.createObjectURL(blob);
 	const anchor = document.createElement('a');
 	anchor.href = url;
-	anchor.download = `sudoku-${Date.now()}.pdf`;
+	anchor.target = '_blank';
+	anchor.rel = 'noopener noreferrer';
 	anchor.click();
 	URL.revokeObjectURL(url);
 }

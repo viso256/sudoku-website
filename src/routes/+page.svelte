@@ -20,6 +20,8 @@
 	let hintsEnabled = $state(true);
 	let notes = $state<Record<number, number[]>>({});
 	let highlightedValue = $state<number | null>(null);
+	let isGeneratingPuzzle = $state(false);
+	let isExportingPdf = $state(false);
 
 	const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -129,10 +131,20 @@
 	}
 
 	async function exportPdf(): Promise<void> {
+		if (isExportingPdf) {
+			return;
+		}
+
+		isExportingPdf = true;
+		await new Promise<void>((resolve) => {
+			setTimeout(resolve, 0);
+		});
 		try {
 			await exportPdfFromWasm(1);
 		} catch (error) {
 			console.error('Failed to export PDF', error);
+		} finally {
+			isExportingPdf = false;
 		}
 	}
 
@@ -158,6 +170,14 @@
 	});
 
 	async function generatePuzzle() {
+		if (isGeneratingPuzzle) {
+			return;
+		}
+
+		isGeneratingPuzzle = true;
+		await new Promise<void>((resolve) => {
+			setTimeout(resolve, 0);
+		});
 		try {
 			const next = await createPuzzleFromWasm();
 			initialPuzzle = next;
@@ -167,6 +187,8 @@
 			const fallback = createPuzzleStub();
 			initialPuzzle = fallback;
 			board = boardToFlat(fallback);
+		} finally {
+			isGeneratingPuzzle = false;
 		}
 
 		notes = {};
@@ -309,13 +331,27 @@
 		<h1>SUDOKU</h1>
 		<div class="header-actions">
 			<span class="header-label">Printable Version</span>
-			<button class="ghost export-btn" type="button" onclick={exportPdf}>Export PDF</button>
+			<button class="ghost export-btn" type="button" onclick={exportPdf} disabled={isExportingPdf}>
+				{#if isExportingPdf}
+					<span class="button-spinner" aria-hidden="true"></span>
+					<span>Opening PDF…</span>
+				{:else}
+					<span>Export PDF</span>
+				{/if}
+			</button>
 		</div>
 	</header>
 
 	<section class="toolbar" aria-label="Sudoku controls">
 		<button class="ghost" type="button" onclick={resetBoard}>Reset</button>
-		<button class="ghost" type="button" onclick={() => void generatePuzzle()}>New puzzle</button>
+		<button class="ghost" type="button" onclick={() => void generatePuzzle()} disabled={isGeneratingPuzzle}>
+			{#if isGeneratingPuzzle}
+				<span class="button-spinner" aria-hidden="true"></span>
+				<span>Generating…</span>
+			{:else}
+				<span>New puzzle</span>
+			{/if}
+		</button>
 		<button class="primary" type="button" onclick={solveBoardStub}>Solve</button>
 		<label class="toggle" aria-label="Toggle hints">
 			<span>Hints</span>
@@ -455,6 +491,33 @@
 		color: #0f172a;
 		border: 1px solid rgba(15, 23, 42, 0.12);
 		font-size: 0.85rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.45rem;
+	}
+
+	.export-btn:disabled,
+	.toolbar button:disabled {
+		opacity: 0.72;
+		cursor: wait;
+	}
+
+	.button-spinner {
+		width: 0.8rem;
+		height: 0.8rem;
+		border: 2px solid rgba(15, 23, 42, 0.15);
+		border-top-color: #0f172a;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+		display: inline-block;
+		vertical-align: middle;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	h1 {
