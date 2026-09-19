@@ -4,8 +4,8 @@
 		boardToFlat,
 		createPuzzleFromWasm,
 		createPuzzleStub,
-		demoSolution,
 		exportPdfFromWasm,
+		solvePuzzleFromWasm,
 		type SudokuBoard
 	} from '$lib/sudoku';
 
@@ -200,14 +200,16 @@
 		highlightedValue = null;
 	}
 
-	function solveBoardStub() {
-		const solved = demoSolution;
-		board = boardToFlat(solved);
-		notes = {};
-		selectedIndex = null;
-		showNumberPicker = false;
-		commentMode = false;
-		highlightedValue = null;
+	async function solveBoardStub() {
+		const solved = await solvePuzzleFromWasm();
+		if (solved) {
+			board = boardToFlat(solved);
+			notes = {};
+			selectedIndex = null;
+			showNumberPicker = false;
+			commentMode = false;
+			highlightedValue = null;
+		}
 	}
 
 	function isSameRowOrColumn(index: number) {
