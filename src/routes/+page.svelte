@@ -22,6 +22,7 @@
 	let highlightedValue = $state<number | null>(null);
 	let isGeneratingPuzzle = $state(false);
 	let isExportingPdf = $state(false);
+	let pdfPageCount = $state(2);
 
 	const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -135,12 +136,13 @@
 			return;
 		}
 
+		const pageCount = Math.max(1, Math.round(pdfPageCount || 1));
 		isExportingPdf = true;
 		await new Promise<void>((resolve) => {
 			setTimeout(resolve, 0);
 		});
 		try {
-			await exportPdfFromWasm(1);
+			await exportPdfFromWasm(pageCount);
 		} catch (error) {
 			console.error('Failed to export PDF', error);
 		} finally {
@@ -331,6 +333,17 @@
 		<h1>SUDOKU</h1>
 		<div class="header-actions">
 			<span class="header-label">Printable Version</span>
+			<label class="page-count-editor" aria-label="Pages">
+				<span>Pages:</span>
+				<input
+					type="number"
+					min="1"
+					max="12"
+					step="1"
+					bind:value={pdfPageCount}
+					aria-label="PDF page count"
+				/>
+			</label>
 			<button class="ghost export-btn" type="button" onclick={exportPdf} disabled={isExportingPdf}>
 				{#if isExportingPdf}
 					<span class="button-spinner" aria-hidden="true"></span>
@@ -538,6 +551,38 @@
 	.header-label {
 		font-size: 0.95rem;
 		color: #475569;
+	}
+
+	.page-count-editor {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.2rem 0.4rem;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.7);
+		border: 1px solid rgba(15, 23, 42, 0.12);
+		font-size: 0.85rem;
+		font-weight: 700;
+		cursor: text;
+	}
+
+	.page-count-editor input {
+		width: 2.8rem;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-weight: 800;
+		padding: 0;
+		text-align: center;
+		appearance: textfield;
+		cursor: pointer;
+	}
+
+	.page-count-editor input::-webkit-outer-spin-button,
+	.page-count-editor input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
 	}
 
 	.toolbar {
