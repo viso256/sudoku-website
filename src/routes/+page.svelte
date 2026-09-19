@@ -1,10 +1,18 @@
 <script lang="ts">
-	import { boardToFlat, createPuzzleStub, demoSolution, flatToBoard, type SudokuBoard } from '$lib/sudoku';
+	import { onMount } from 'svelte';
+	import {
+		boardToFlat,
+		createPuzzleFromWasm,
+		createPuzzleStub,
+		demoSolution,
+		exportPdfFromWasm,
+		type SudokuBoard
+	} from '$lib/sudoku';
 
-	const initialPuzzle = createPuzzleStub();
-	const initialFlat = boardToFlat(initialPuzzle);
+	let initialPuzzle = $state<SudokuBoard>(createPuzzleStub());
+	let initialFlat = $derived(boardToFlat(initialPuzzle));
 
-	let board = $state<number[]>([...initialFlat]);
+	let board = $state<number[]>([]);
 	let selectedIndex = $state<number | null>(null);
 	let showNumberPicker = $state(false);
 	let pickerPosition = $state({ x: 0, y: 0 });
@@ -120,10 +128,12 @@
 		highlightedValue = null;
 	}
 
-	// Dummy export handler (implement later)
-	function exportPdf(): void {
-		// TODO: implement PDF export
-		console.log('exportPdf called — TODO: implement');
+	async function exportPdf(): Promise<void> {
+		try {
+			await exportPdfFromWasm(1);
+		} catch (error) {
+			console.error('Failed to export PDF', error);
+		}
 	}
 
 	function openNumberPicker(index: number, event?: MouseEvent) {
@@ -142,9 +152,23 @@
 		}
 	}
 
-	function generatePuzzleStub() {
-		const next = createPuzzleStub();
-		board = boardToFlat(next);
+	onMount(() => {
+		board = [...initialFlat];
+		void generatePuzzle();
+	});
+
+	async function generatePuzzle() {
+		try {
+			const next = await createPuzzleFromWasm();
+			initialPuzzle = next;
+			board = boardToFlat(next);
+		} catch (error) {
+			console.warn('Falling back to local demo puzzle because WASM generation is unavailable.', error);
+			const fallback = createPuzzleStub();
+			initialPuzzle = fallback;
+			board = boardToFlat(fallback);
+		}
+
 		notes = {};
 		selectedIndex = null;
 		showNumberPicker = false;
@@ -255,7 +279,7 @@
 	<title>Sudoku</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
 		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0"
 		rel="stylesheet"
@@ -291,12 +315,12 @@
 
 	<section class="toolbar" aria-label="Sudoku controls">
 		<button class="ghost" type="button" onclick={resetBoard}>Reset</button>
-		<button class="ghost" type="button" onclick={generatePuzzleStub}>New puzzle</button>
+		<button class="ghost" type="button" onclick={() => void generatePuzzle()}>New puzzle</button>
 		<button class="primary" type="button" onclick={solveBoardStub}>Solve</button>
 		<label class="toggle" aria-label="Toggle hints">
 			<span>Hints</span>
 			<input type="checkbox" bind:checked={hintsEnabled} />
-			<span class="toggle-track"><span class="toggle-thumb" /></span>
+			<span class="toggle-track"><span class="toggle-thumb"></span></span>
 		</label>
 	</section>
 
@@ -822,10 +846,6 @@
 		color: #475569;
 		font-size: 0.95rem;
 		max-width: 48rem;
-	}
-
-	.note p {
-		margin: 0;
 	}
 
 	@media (min-width: 900px) {

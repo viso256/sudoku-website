@@ -1,3 +1,5 @@
+import init, { generate_pdf, generate_sudoku } from 'sudoku-wasm';
+
 export type SudokuBoard = number[][];
 
 export const emptyBoard: SudokuBoard = Array.from({ length: 9 }, () => Array(9).fill(0));
@@ -26,13 +28,60 @@ export const demoSolution: SudokuBoard = [
 	[3, 4, 5, 2, 8, 6, 1, 7, 9]
 ];
 
+let wasmReady: Promise<void> | null = null;
+
+async function ensureWasmReady(): Promise<void> {
+	if (typeof window === 'undefined') {
+		return;
+	}
+
+	if (!wasmReady) {
+		wasmReady = init().then(() => undefined).catch((error) => {
+			wasmReady = null;
+			throw error;
+		});
+	}
+
+	await wasmReady;
+}
+
+export function parseGeneratedSudoku(raw: string): SudokuBoard {
+	const parsed = JSON.parse(raw) as { puzzle?: Array<Array<number | null>> };
+	const puzzle = parsed.puzzle ?? [];
+	return puzzle.map((row) => row.map((cell) => cell ?? 0));
+}
+
+export async function createPuzzleFromWasm(): Promise<SudokuBoard> {
+	if (typeof window === 'undefined') {
+		return createPuzzleStub();
+	}
+
+	await ensureWasmReady();
+	return parseGeneratedSudoku(generate_sudoku());
+}
+
+export async function exportPdfFromWasm(pages = 1): Promise<void> {
+	if (typeof window === 'undefined') {
+		return;
+	}
+
+	await ensureWasmReady();
+	const pdfBytes = generate_pdf(pages);
+	const pdfBuffer = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
+	const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement('a');
+	anchor.href = url;
+	anchor.download = `sudoku-${Date.now()}.pdf`;
+	anchor.click();
+	URL.revokeObjectURL(url);
+}
+
 export function createPuzzleStub(): SudokuBoard {
-	// TODO: replace with WASM-backed generator later.
 	return demoPuzzle.map((row) => [...row]);
 }
 
 export function solvePuzzleStub(puzzle: SudokuBoard): SudokuBoard {
-	// TODO: replace with WASM-backed solver later.
 	return puzzle.map((row) => [...row]);
 }
 
