@@ -4,6 +4,22 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			let savedTheme = null;
+			try {
+				savedTheme = localStorage.getItem('sudoku-dark-mode');
+			} catch {
+				// Use the system preference when local storage is unavailable.
+			}
+			document.documentElement.dataset.theme =
+				savedTheme === null
+					? window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light'
+					: savedTheme === 'true'
+						? 'dark'
+						: 'light';
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
