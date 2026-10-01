@@ -566,38 +566,38 @@
 
 	:global(:root[data-theme='dark']) {
 		color-scheme: dark;
-		--page-bg: radial-gradient(circle at top, #020817 0%, #0f172a 40%, #111827 100%);
-		--page-text: #e2e8f0;
-		--page-text-soft: #cbd5e1;
-		--page-text-muted: #94a3b8;
-		--surface: rgba(15, 23, 42, 0.7);
-		--surface-strong: rgba(15, 23, 42, 0.96);
-		--panel: rgba(15, 23, 42, 0.72);
-		--panel-border: rgba(148, 163, 184, 0.25);
-		--board-bg: #0f172a;
-		--board-border: #e2e8f0;
-		--cell-bg: #111827;
-		--cell-bg-fixed: #1e293b;
+		--page-bg: radial-gradient(circle at top, #020817 0%, #0b1120 38%, #111827 100%);
+		--page-text: #c8d3e1;
+		--page-text-soft: #a8b7ca;
+		--page-text-muted: #8193ad;
+		--surface: rgba(9, 14, 22, 0.78);
+		--surface-strong: rgba(9, 14, 22, 0.96);
+		--panel: rgba(9, 14, 22, 0.8);
+		--panel-border: rgba(148, 163, 184, 0.18);
+		--board-bg: #0d1726;
+		--board-border: #b7c3d5;
+		--cell-bg: #0d1726;
+		--cell-bg-fixed: #182435;
 		--cell-bg-selected: #1d4ed8;
-		--cell-bg-related: rgba(59, 130, 246, 0.18);
-		--cell-bg-match: rgba(234, 179, 8, 0.2);
-		--cell-note: #94a3b8;
+		--cell-bg-related: rgba(59, 130, 246, 0.15);
+		--cell-bg-match: rgba(234, 179, 8, 0.18);
+		--cell-note: #8ea2bc;
 		--toggle-track: #334155;
 		--toggle-track-on: #3b82f6;
 		--shadow: rgba(2, 6, 23, 0.6);
-		--picker-bg: rgba(15, 23, 42, 0.96);
-		--picker-digit-bg: #0f172a;
-		--picker-digit-bg-note: rgba(59, 130, 246, 0.18);
-		--picker-digit-border: rgba(148, 163, 184, 0.22);
-		--picker-digit-active: rgba(96, 165, 250, 0.24);
-		--button-text: #e2e8f0;
-		--button-icon: #e2e8f0;
-		--button-muted: #111827;
-		--button-muted-strong: #1e293b;
+		--picker-bg: rgba(9, 14, 22, 0.96);
+		--picker-digit-bg: #0b1220;
+		--picker-digit-bg-note: rgba(59, 130, 246, 0.15);
+		--picker-digit-border: rgba(148, 163, 184, 0.16);
+		--picker-digit-active: rgba(96, 165, 250, 0.18);
+		--button-text: #c8d3e1;
+		--button-icon: #c8d3e1;
+		--button-muted: #0a111c;
+		--button-muted-strong: #182435;
 		--primary-start: #3b82f6;
 		--primary-end: #2563eb;
 		--primary-shadow: rgba(59, 130, 246, 0.35);
-		--cell-border: #334155;
+		--cell-border: #273549;
 	}
 
 	:global(body) {
