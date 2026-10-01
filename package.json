@@ -33,6 +33,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@fontsource-variable/material-symbols-rounded": "^5.3.8",
 		"sudoku-wasm": "github:viso256/sudoku-wasm#dist"
 	}
 }

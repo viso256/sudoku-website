@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import '@fontsource-variable/material-symbols-rounded/standard.css';
 	import {
 		boardToFlat,
 		clampPickerPosition,
@@ -398,12 +399,6 @@
 <svelte:head>
 	<title>Sudoku</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-	<link
-		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0"
-		rel="stylesheet"
-	/>
 </svelte:head>
 
 <svelte:window
@@ -1161,7 +1156,7 @@
 	}
 
 	.material-symbols-rounded {
-		font-family: 'Material Symbols Rounded';
+		font-family: 'Material Symbols Rounded Variable';
 		font-size: 1.1rem;
 		font-variation-settings:
 			'FILL' 0,
