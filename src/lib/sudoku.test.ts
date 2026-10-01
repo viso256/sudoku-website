@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { clampPickerPosition, parseGeneratedSudoku } from './sudoku.ts';
+import { clampPickerPosition, parseGeneratedSudoku, parseSavedSudokuGame } from './sudoku.ts';
 
 test('parseGeneratedSudoku converts nulls into empty cells', () => {
 	const raw = JSON.stringify({
@@ -49,4 +49,25 @@ test('clampPickerPosition keeps the number picker within a narrow viewport', () 
 
 	assert.equal(position.x, 92);
 	assert.equal(position.y, 176);
+});
+
+test('parseSavedSudokuGame restores a valid saved game', () => {
+	const game = {
+		initialPuzzle: Array(81).fill(0),
+		board: Array(81).fill(0),
+		notes: { 4: [2, 7] },
+		solution: Array(81).fill(1)
+	};
+
+	assert.deepEqual(parseSavedSudokuGame(JSON.stringify(game)), game);
+});
+
+test('parseSavedSudokuGame rejects invalid saved data', () => {
+	assert.equal(parseSavedSudokuGame('{invalid'), null);
+	assert.equal(
+		parseSavedSudokuGame(
+			JSON.stringify({ initialPuzzle: [1], board: [1], notes: {}, solution: null })
+		),
+		null
+	);
 });

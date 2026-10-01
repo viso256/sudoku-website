@@ -1,6 +1,12 @@
 import init, { generate_pdf, generate_sudoku } from 'sudoku-wasm';
 
 export type SudokuBoard = number[][];
+export type SavedSudokuGame = {
+	initialPuzzle: number[];
+	board: number[];
+	notes: Record<number, number[]>;
+	solution: number[] | null;
+};
 
 export const emptyBoard: SudokuBoard = Array.from({ length: 9 }, () => Array(9).fill(0));
 
@@ -12,10 +18,12 @@ async function ensureWasmReady(): Promise<void> {
 	}
 
 	if (!wasmReady) {
-		wasmReady = init().then(() => undefined).catch((error) => {
-			wasmReady = null;
-			throw error;
-		});
+		wasmReady = init()
+			.then(() => undefined)
+			.catch((error) => {
+				wasmReady = null;
+				throw error;
+			});
 	}
 
 	await wasmReady;
@@ -31,6 +39,55 @@ export function parseGeneratedSolution(raw: string): SudokuBoard {
 	const parsed = JSON.parse(raw) as { solution?: Array<Array<number | null>> };
 	const solution = parsed.solution ?? [];
 	return solution.map((row) => row.map((cell) => cell ?? 0));
+}
+
+export function parseSavedSudokuGame(raw: string): SavedSudokuGame | null {
+	try {
+		const parsed: unknown = JSON.parse(raw);
+		if (!parsed || typeof parsed !== 'object') {
+			return null;
+		}
+
+		const game = parsed as Partial<SavedSudokuGame>;
+		const isFlatBoard = (candidate: unknown): candidate is number[] =>
+			Array.isArray(candidate) &&
+			candidate.length === 81 &&
+			candidate.every((value) => Number.isInteger(value) && value >= 0 && value <= 9);
+
+		if (!isFlatBoard(game.initialPuzzle) || !isFlatBoard(game.board)) {
+			return null;
+		}
+		if (game.solution !== null && !isFlatBoard(game.solution)) {
+			return null;
+		}
+		if (!game.notes || typeof game.notes !== 'object' || Array.isArray(game.notes)) {
+			return null;
+		}
+
+		const notes: Record<number, number[]> = {};
+		for (const [index, values] of Object.entries(game.notes)) {
+			const cellIndex = Number(index);
+			if (
+				!Number.isInteger(cellIndex) ||
+				cellIndex < 0 ||
+				cellIndex >= 81 ||
+				!Array.isArray(values) ||
+				!values.every((value) => Number.isInteger(value) && value >= 1 && value <= 9)
+			) {
+				return null;
+			}
+			notes[cellIndex] = values;
+		}
+
+		return {
+			initialPuzzle: game.initialPuzzle,
+			board: game.board,
+			notes,
+			solution: game.solution ?? null
+		};
+	} catch {
+		return null;
+	}
 }
 
 let currentSolution: SudokuBoard | null = null;
@@ -69,7 +126,10 @@ export async function exportPdfFromWasm(pages = 1): Promise<void> {
 
 	await ensureWasmReady();
 	const pdfBytes = generate_pdf(pages);
-	const pdfBuffer = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
+	const pdfBuffer = pdfBytes.buffer.slice(
+		pdfBytes.byteOffset,
+		pdfBytes.byteOffset + pdfBytes.byteLength
+	) as ArrayBuffer;
 	const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
 	const url = URL.createObjectURL(blob);
 	const anchor = document.createElement('a');

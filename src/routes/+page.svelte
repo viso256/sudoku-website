@@ -6,7 +6,11 @@
 		createPuzzleFromWasm,
 		createPuzzleStub,
 		exportPdfFromWasm,
+		flatToBoard,
+		getCurrentSolution,
+		parseSavedSudokuGame,
 		solvePuzzleFromWasm,
+		setCurrentSolution,
 		type SudokuBoard
 	} from '$lib/sudoku';
 
@@ -24,14 +28,17 @@
 	let isExportingPdf = $state(false);
 	let pdfPageCount = $state(2);
 	let darkMode = $state(false);
+	let gameReady = $state(false);
+	const savedGameKey = 'sudoku-current-game';
 
 	// Load persisted settings from localStorage
 	$effect.pre(() => {
 		if (typeof window !== 'undefined') {
 			const savedTheme = localStorage.getItem('sudoku-dark-mode');
-			darkMode = savedTheme === null
-				? window.matchMedia('(prefers-color-scheme: dark)').matches
-				: savedTheme === 'true';
+			darkMode =
+				savedTheme === null
+					? window.matchMedia('(prefers-color-scheme: dark)').matches
+					: savedTheme === 'true';
 
 			const savedHints = localStorage.getItem('sudoku-hints-enabled');
 			if (savedHints !== null) {
@@ -66,6 +73,21 @@
 	$effect(() => {
 		if (typeof window !== 'undefined') {
 			localStorage.setItem('sudoku-pdf-page-count', String(pdfPageCount));
+		}
+	});
+
+	$effect(() => {
+		if (typeof window !== 'undefined' && gameReady) {
+			const solution = getCurrentSolution();
+			localStorage.setItem(
+				savedGameKey,
+				JSON.stringify({
+					initialPuzzle: initialFlat,
+					board,
+					notes,
+					solution: solution ? boardToFlat(solution) : null
+				})
+			);
 		}
 	});
 
@@ -221,7 +243,16 @@
 	}
 
 	onMount(() => {
-		board = [...initialFlat];
+		const savedGame = parseSavedSudokuGame(localStorage.getItem(savedGameKey) ?? '');
+		if (savedGame) {
+			initialPuzzle = flatToBoard(savedGame.initialPuzzle);
+			board = [...savedGame.board];
+			notes = savedGame.notes;
+			setCurrentSolution(savedGame.solution ? flatToBoard(savedGame.solution) : null);
+			gameReady = true;
+			return;
+		}
+
 		void generatePuzzle();
 	});
 
@@ -239,12 +270,17 @@
 			initialPuzzle = next;
 			board = boardToFlat(next);
 		} catch (error) {
-			console.warn('Falling back to local demo puzzle because WASM generation is unavailable.', error);
+			console.warn(
+				'Falling back to local demo puzzle because WASM generation is unavailable.',
+				error
+			);
 			const fallback = createPuzzleStub();
 			initialPuzzle = fallback;
 			board = boardToFlat(fallback);
+			setCurrentSolution(null);
 		} finally {
 			isGeneratingPuzzle = false;
+			gameReady = true;
 		}
 
 		notes = {};
@@ -270,7 +306,9 @@
 		if (selectedIndex === null) {
 			return false;
 		}
-		return Math.floor(index / 9) === Math.floor(selectedIndex / 9) || index % 9 === selectedIndex % 9;
+		return (
+			Math.floor(index / 9) === Math.floor(selectedIndex / 9) || index % 9 === selectedIndex % 9
+		);
 	}
 
 	function cellClass(index: number) {
@@ -284,7 +322,7 @@
 		const isBoxMatch =
 			selectedIndex !== null &&
 			Math.floor(selectedIndex / 9 / 3) === Math.floor(row / 3) &&
-			Math.floor(selectedIndex % 9 / 3) === Math.floor(col / 3);
+			Math.floor((selectedIndex % 9) / 3) === Math.floor(col / 3);
 
 		return [
 			'cell',
@@ -324,7 +362,9 @@
 			const checkCol = index % 9;
 			const sameRow = checkRow === row;
 			const sameCol = checkCol === col;
-			const sameBox = Math.floor(checkRow / 3) === Math.floor(row / 3) && Math.floor(checkCol / 3) === Math.floor(col / 3);
+			const sameBox =
+				Math.floor(checkRow / 3) === Math.floor(row / 3) &&
+				Math.floor(checkCol / 3) === Math.floor(col / 3);
 
 			if (sameRow || sameCol || sameBox) {
 				blocked.add(value);
@@ -366,22 +406,25 @@
 	/>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeydown} onmousedown={(event) => {
-	if (!showNumberPicker) {
-		return;
-	}
+<svelte:window
+	onkeydown={handleKeydown}
+	onmousedown={(event) => {
+		if (!showNumberPicker) {
+			return;
+		}
 
-	const target = event.target as HTMLElement | null;
-	if (!target) {
-		closeNumberPicker();
-		return;
-	}
+		const target = event.target as HTMLElement | null;
+		if (!target) {
+			closeNumberPicker();
+			return;
+		}
 
-	const picker = document.querySelector('.number-picker');
-	if (picker && !picker.contains(target)) {
-		closeNumberPicker();
-	}
-}} />
+		const picker = document.querySelector('.number-picker');
+		if (picker && !picker.contains(target)) {
+			closeNumberPicker();
+		}
+	}}
+/>
 
 <div class="page-shell">
 	<header class="hero">
@@ -396,7 +439,9 @@
 				title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
 				onclick={() => (darkMode = !darkMode)}
 			>
-				<span class="material-symbols-rounded" aria-hidden="true">{darkMode ? 'light_mode' : 'dark_mode'}</span>
+				<span class="material-symbols-rounded" aria-hidden="true"
+					>{darkMode ? 'light_mode' : 'dark_mode'}</span
+				>
 			</button>
 			<span class="header-label">Printable Version</span>
 			<label class="page-count-editor" aria-label="Pages">
@@ -423,7 +468,12 @@
 
 	<section class="toolbar" aria-label="Sudoku controls">
 		<button class="ghost" type="button" onclick={resetBoard}>Reset</button>
-		<button class="ghost" type="button" onclick={() => void generatePuzzle()} disabled={isGeneratingPuzzle}>
+		<button
+			class="ghost"
+			type="button"
+			onclick={() => void generatePuzzle()}
+			disabled={isGeneratingPuzzle}
+		>
 			{#if isGeneratingPuzzle}
 				<span class="button-spinner" aria-hidden="true"></span>
 				<span>Generating…</span>
@@ -449,7 +499,7 @@
 						onclick={(event) => {
 							openNumberPicker(index, event);
 						}}
-						aria-label={`Row ${Math.floor(index / 9) + 1}, column ${index % 9 + 1}`}
+						aria-label={`Row ${Math.floor(index / 9) + 1}, column ${(index % 9) + 1}`}
 					>
 						{#if value !== 0}
 							<span class="cell-value">{value}</span>
@@ -476,7 +526,10 @@
 			<div class="number-grid">
 				{#each digits as digit}
 					{@const isSelectedNote = selectedNotesForCell().has(digit)}
-					{@const isBlocked = hintsEnabled && selectedIndex !== null && blockedDigitsForCell(selectedIndex).has(digit)}
+					{@const isBlocked =
+						hintsEnabled &&
+						selectedIndex !== null &&
+						blockedDigitsForCell(selectedIndex).has(digit)}
 					<button
 						type="button"
 						class={`picker-digit${isSelectedNote ? ' note-selected' : ''}${isBlocked ? ' blocked' : ''}`}
@@ -494,10 +547,20 @@
 				{/each}
 			</div>
 			<div class="picker-actions" aria-label="Quick actions">
-				<button type="button" class="action-btn close-btn" aria-label="Close" onclick={() => (showNumberPicker = false)}>
+				<button
+					type="button"
+					class="action-btn close-btn"
+					aria-label="Close"
+					onclick={() => (showNumberPicker = false)}
+				>
 					<span class="material-symbols-rounded">close</span>
 				</button>
-				<button type="button" class="action-btn clear-btn" aria-label="Clear cell" onclick={() => setCellValue(null)}>
+				<button
+					type="button"
+					class="action-btn clear-btn"
+					aria-label="Clear cell"
+					onclick={() => setCellValue(null)}
+				>
 					<span class="material-symbols-rounded">backspace</span>
 				</button>
 				<button
@@ -701,15 +764,22 @@
 		border: 1px solid var(--panel-border);
 		background: linear-gradient(135deg, var(--surface-strong), var(--surface));
 		color: var(--button-text);
-		box-shadow: 0 10px 24px var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+		box-shadow:
+			0 10px 24px var(--shadow),
+			inset 0 1px 0 rgba(255, 255, 255, 0.4);
 		cursor: pointer;
-		transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease,
+			border-color 0.2s ease;
 		z-index: 2;
 	}
 
 	.theme-toggle:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 14px 28px var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+		box-shadow:
+			0 14px 28px var(--shadow),
+			inset 0 1px 0 rgba(255, 255, 255, 0.45);
 	}
 
 	.theme-toggle:focus-visible {
@@ -885,7 +955,9 @@
 		justify-content: center;
 		padding: 0;
 		cursor: pointer;
-		transition: background-color 0.15s ease, transform 0.15s ease;
+		transition:
+			background-color 0.15s ease,
+			transform 0.15s ease;
 		position: relative;
 		overflow: hidden;
 	}
@@ -1021,7 +1093,11 @@
 		color: rgba(15, 23, 42, 0.72);
 		pointer-events: none;
 		z-index: 2;
-		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+		font-variation-settings:
+			'FILL' 0,
+			'wght' 400,
+			'GRAD' 0,
+			'opsz' 48;
 	}
 
 	.picker-number {
@@ -1087,7 +1163,11 @@
 	.material-symbols-rounded {
 		font-family: 'Material Symbols Rounded';
 		font-size: 1.1rem;
-		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+		font-variation-settings:
+			'FILL' 0,
+			'wght' 400,
+			'GRAD' 0,
+			'opsz' 24;
 		line-height: 1;
 		display: inline-block;
 	}
